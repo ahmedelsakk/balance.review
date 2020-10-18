@@ -1,3 +1,11 @@
+ --create customer balance update
+ SELECT t1.*, t2.BillingModel,t2.[Consolidation Cycle],t3.[Warranty Days]
+  INTO Customer_balance_update 
+  from TE_Data_Customer_Balance_Detai as t1 left outer join Bill_Mode as t2 
+  on t1.Number = t2.CustID
+  left outer join [Customer Balance] as t3
+  on t1.Number=t3.[customer number]
+  -----------------------------------------------------
 --- delete acount not have receipt and invoices
 delete from [Customer Balance] from [Customer Balance] c left outer join [Total_Invoices] t
 on c.[Customer Number]=t.[Customer Number]
@@ -11,19 +19,11 @@ delete from c from  TE_Data_Customer_Balance_Detai c left outer join Total_Invoi
 on c.[Invoice / Receipt Number]=t.[Invoice Number]
 where  t.[Invoice Type]='accounting trans' or t.[Invoice Type]='Accountig Trans CR' 
 ----------------------------------------------------
-select * from TE_Data_Customer_Balance_Detai
----------------------------------------------------------------------
+
+--- create balance review
 select c.[Customer Number] into balance_review  from [Customer Balance] c
 ---------------------------------------------
 
- SELECT t1.*, t2.BillingModel,t2.[Consolidation Cycle],t3.[Warranty Days]
-  INTO Customer_balance_update 
-  from TE_Data_Customer_Balance_Detai as t1 left outer join Bill_Mode as t2 
-  on t1.Number = t2.CustID
-  left outer join [Account Advanced Find View] as t3
-  on t1.Number=t3.[Account Number]
-  -----------------------------------------------------------
- 
   ----------------------------------
  update Customer_balance_update
  set [Consolidation Cycle]='Every 1 Month'
@@ -108,8 +108,8 @@ else 0
 end)
 from Customer_balance_update t
 
-select sum(due) from Customer_balance_update
-select sum(notdue)+sum(due)+sum([functional balance without onaccount])+sum(OnAccount2) from Customer_balance_update
+select sum(Due) as due,sum(NotDue) as notDue from Customer_balance_update
+select sum(due) due,sum(NotDue) notdue,sum([functional balance without onaccount]) unapplied,sum(OnAccount2) onaccount from Customer_balance_update
 ------------------------------------------------------------------
 ----add not due
 ALTER TABLE Customer_balance_update ADD NotDue decimal(20,4);
@@ -117,7 +117,7 @@ ALTER TABLE Customer_balance_update ADD NotDue decimal(20,4);
 update t
 set NotDue =(case
 when t.Type='payment' then 0
-when t.duedate2>GETDATE() then [Functional Balance]
+when t.duedate2>'2020-10-11' then [Functional Balance]
 else 0
 end)
 from Customer_balance_update t
